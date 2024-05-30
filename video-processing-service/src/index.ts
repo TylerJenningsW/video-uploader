@@ -23,7 +23,7 @@ app.post('/process-video', (req, res) => {
     .save(outputFilePath)
 })
 
-const port = process.env.PORT || 3007
+const port = process.env.PORT || 3000
 app.listen(port, () => {
   console.log(`Example app listening at http://localhost:${port}`)
 })
