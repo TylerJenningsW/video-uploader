@@ -4,3 +4,9 @@
     align-items: center;
     padding: 1em;
 }
+
+.side {
+    display: flex;
+    align-items: center;
+    gap: 1em;
+}
