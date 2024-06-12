@@ -1,5 +1,13 @@
 import express from 'express'
-import { convertVideo, deleteProcessedVideo, deleteRawVideo, downloadRawVideo, setupDirectories, uploadProcessedVideo } from './storage'
+import {
+  convertVideo,
+  deleteProcessedVideo,
+  deleteRawVideo,
+  downloadRawVideo,
+  setupDirectories,
+  uploadProcessedVideo,
+} from './storage'
+import { isVideoNew, setVideo } from './firestore'
 
 setupDirectories()
 
@@ -26,6 +34,17 @@ app.post('/process-video', async (req, res) => {
 
   const inputFileName = data.name
   const outputFileName = `proccessed_${inputFileName}`
+  const videoId = inputFileName.split('.')[0]
+
+  if (!isVideoNew(videoId)) {
+    return res.status(400).send(`Bad Request: Video already processed.`)
+  } else {
+    await setVideo(videoId, {
+      id: videoId,
+      uid: videoId.split('-')[0],
+      status: 'processing',
+    })
+  }
 
   // Download the raw video from Cloud Storage.
   await downloadRawVideo(inputFileName)
@@ -34,16 +53,28 @@ app.post('/process-video', async (req, res) => {
   try {
     await convertVideo(inputFileName, outputFileName)
   } catch (err) {
-    await Promise.all([deleteRawVideo(inputFileName), deleteProcessedVideo(outputFileName)])
+    await Promise.all([
+      deleteRawVideo(inputFileName),
+      deleteProcessedVideo(outputFileName),
+    ])
     console.error(err)
-    return res.status(500).send(`Internal Server Error: video processing failed.`)
+    return res
+      .status(500)
+      .send(`Internal Server Error: video processing failed.`)
   }
 
   // Upload the processed video to Cloud Storage.
   await uploadProcessedVideo(outputFileName)
 
+  await setVideo(videoId, {
+    status: 'processed',
+    filename: outputFileName,
+  })
   // Clean up the local file system.
-  await Promise.all([deleteRawVideo(inputFileName), deleteProcessedVideo(outputFileName)])
+  await Promise.all([
+    deleteRawVideo(inputFileName),
+    deleteProcessedVideo(outputFileName),
+  ])
 
   return res.status(200).send(`Video processed successfully.`)
 })
