@@ -1,14 +1,15 @@
 'use client'
 
-import { useSearchParams } from 'next/navigation'
-export default function Watch() {
-  const videoPrefix = 'https://storage.googleapis.com/tj-yt-processed-videos/'
+import VideoPlayer from './VideoPlayer'
+import { Suspense } from 'react'
 
-  const videoSrc = useSearchParams().get('v')
+export default function Watch() {
   return (
     <div>
       <h1>Watch Page</h1>
-      {<video controls src={videoPrefix + videoSrc} />}
+      <Suspense fallback={<div>Loading...</div>}>
+        <VideoPlayer />
+      </Suspense>
     </div>
   )
 }
